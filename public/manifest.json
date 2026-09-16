@@ -1,7 +1,7 @@
 {
-  "name": "Sistem Informasi SDN Karanggeger II",
-  "short_name": "SDN Karanggeger II",
-  "description": "Sistem Informasi dan Manajemen Sekolah SDN Karanggeger II",
+  "name": "Sistem Informasi SGW2",
+  "short_name": "SGW2",
+  "description": "Sistem Informasi dan Manajemen Sekolah SGW2",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
