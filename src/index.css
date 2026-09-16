@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-[#F8F9FA] text-gray-900;
+  }
+}
+
+/* Custom elegant scrollbar for menus and list containers */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+}
+
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+}
+
+/* Define no-scrollbar utility to gracefully hide scrollbars where needed */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Print optimizations for official reports */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Hide backdrop/overlay colors */
+  .fixed.bg-black\/60 {
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Make only the print wrapper visible */
+  body * {
+    visibility: hidden;
+  }
+
+  #recap-print-wrapper, #recap-print-wrapper * {
+    visibility: visible;
+  }
+
+  /* Layout and size constraints for the print sheet */
+  #recap-print-wrapper {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Expand internal scrollable components */
+  #recap-print-wrapper .overflow-auto,
+  #recap-print-wrapper .overflow-y-auto,
+  #recap-print-wrapper .overflow-x-auto {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Hide print buttons, search fields, close buttons and headers in the modal */
+  .no-print,
+  button,
+  input,
+  header,
+  nav,
+  aside,
+  .search-print,
+  #recap-print-wrapper button,
+  #recap-print-wrapper .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Style tables for standard printing */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto;
+  }
+
+  th, td {
+    border: 1.5px solid #cbd5e1 !important;
+    padding: 10px 8px !important;
+    font-size: 11px !important;
+    color: #000000 !important;
+    background: transparent !important;
+  }
+
+  th {
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    background-color: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+
+@media print {
+  .markdown-body hr {
+    break-before: page;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+}

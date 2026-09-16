@@ -1,0 +1,6 @@
+{
+  "name": "Remix SimSek - Sistem Manajemen Sekolah",
+  "description": "A comprehensive school management system with attendance, grades, schedules, and professional teacher tools (ATP, Prota, Promes, Modul Ajar).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

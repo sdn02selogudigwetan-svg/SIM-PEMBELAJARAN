@@ -1,0 +1,297 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        ('email' in request.auth.token && (request.auth.token.email.lower() == 'sdnkaranggeger2@gmail.com' || request.auth.token.email.lower() == 'sdn02selogudigwetan@gmail.com')) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isTeacher() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    function isApproved() {
+      return isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_approved == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Validation Helpers ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['full_name', 'role']) &&
+             data.full_name is string && data.full_name.size() <= 200 &&
+             data.role in ['teacher', 'student', 'admin'] &&
+             (data.get('is_approved', false) is bool) &&
+             (data.get('password', null) == null || data.password == "" || (data.password is string && data.password.size() <= 100)) &&
+             (data.get('email', null) == null || data.email == "" || (data.email is string && data.email.size() <= 100)) &&
+             (data.get('nickname', null) == null || data.nickname == "" || (data.nickname is string && data.nickname.size() <= 50)) &&
+             (data.get('gender', null) == null || data.gender == "" || data.gender in ['L', 'P']) &&
+             (data.get('nis', null) == null || data.nis == "" || (data.nis is string && data.nis.size() <= 50)) &&
+             (data.get('nisn', null) == null || data.nisn == "" || (data.nisn is string && data.nisn.size() <= 50)) &&
+             (data.get('birth_place', null) == null || data.birth_place == "" || (data.birth_place is string && data.birth_place.size() <= 100)) &&
+             (data.get('birth_date', null) == null || data.birth_date == "" || (data.birth_date is string && data.birth_date.size() <= 50)) &&
+             (data.get('father_name', null) == null || data.father_name == "" || (data.father_name is string && data.father_name.size() <= 100)) &&
+             (data.get('mother_name', null) == null || data.mother_name == "" || (data.mother_name is string && data.mother_name.size() <= 100)) &&
+             (data.get('last_education', null) == null || data.last_education == "" || (data.last_education is string && data.last_education.size() <= 100)) &&
+             (data.get('golongan', null) == null || data.golongan == "" || (data.golongan is string && data.golongan.size() <= 100)) &&
+             (data.get('pangkat', null) == null || data.pangkat == "" || (data.pangkat is string && data.pangkat.size() <= 100)) &&
+             (data.get('api_key', null) == null || data.api_key == "" || (data.api_key is string && data.api_key.size() <= 200)) &&
+             (data.get('teacher_type', null) == null || data.teacher_type == "" || data.teacher_type in [
+               'Guru Kelas 1', 'Guru Kelas 2', 'Guru Kelas 3', 'Guru Kelas 4', 'Guru Kelas 5', 'Guru Kelas 6', 'Guru PAI', 'Guru PJOK'
+             ]) &&
+             (data.get('class_id', null) == null || data.class_id == "" || isValidId(data.class_id)) &&
+             (data.get('created_at', null) == null || data.created_at is timestamp || data.created_at is string);
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['full_name', 'class_id', 'created_at']) &&
+             data.full_name is string && data.full_name.size() <= 200 &&
+             isValidId(data.class_id) &&
+             (data.get('nickname', null) == null || (data.nickname is string && data.nickname.size() <= 50)) &&
+             (data.get('gender', null) == null || data.gender in ['L', 'P']) &&
+             (data.get('nis', null) == null || (data.nis is string && data.nis.size() <= 20)) &&
+             (data.get('nisn', null) == null || (data.nisn is string && data.nisn.size() <= 20)) &&
+             (data.get('birth_place', null) == null || (data.birth_place is string && data.birth_place.size() <= 100)) &&
+             (data.get('birth_date', null) == null || (data.birth_date is string && data.birth_date.size() <= 50)) &&
+             (data.get('father_name', null) == null || (data.father_name is string && data.father_name.size() <= 100)) &&
+             (data.get('mother_name', null) == null || (data.mother_name is string && data.mother_name.size() <= 100)) &&
+             (data.get('role', null) == null || data.role == 'student') &&
+             (data.created_at is timestamp || (data.created_at is string && data.created_at.size() <= 100));
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['name', 'teacher_id', 'created_at']) &&
+             data.name is string && data.name.size() <= 100 &&
+             (data.get('code', '') == '' || (data.code is string && data.code.size() <= 50)) &&
+             (data.get('subject', '') == '' || (data.subject is string && data.subject.size() <= 100)) &&
+             (data.get('semester', '') == '' || data.semester in ['1', '2']) &&
+             (data.get('academic_year', '') == '' || data.academic_year is string) &&
+             isValidId(data.teacher_id) &&
+             data.created_at is timestamp;
+    }
+
+    function isValidMaterial(data) {
+      return data.keys().hasAll(['class_id', 'semester', 'topics', 'subject', 'created_at']) &&
+             isValidId(data.class_id) &&
+             (data.semester in ['1', '2', 'Ganjil', 'Genap']) &&
+             data.topics is list && data.topics.size() > 0 &&
+             data.subject is string && data.subject.size() <= 100 &&
+             (data.get('description', null) == null || (data.description is string && data.description.size() <= 2000)) &&
+             (data.get('file_url', null) == null || (data.file_url is string && data.file_url.size() <= 1000)) &&
+             data.created_at is timestamp;
+    }
+
+    function isValidSubject(data) {
+      return data.keys().hasAll(['name', 'class_id', 'created_at']) &&
+             data.name is string && data.name.size() <= 100 &&
+             isValidId(data.class_id) &&
+             data.created_at is timestamp;
+    }
+
+    function isValidAttendance(data) {
+      return data.keys().hasAll(['class_id', 'date', 'teacher_id', 'records', 'updated_at']) &&
+             isValidId(data.class_id) &&
+             data.date is string && data.date.size() <= 30 &&
+             isValidId(data.teacher_id) &&
+             data.records is map &&
+             data.updated_at is timestamp;
+    }
+
+    function isValidGrade(data) {
+      return data.keys().hasAll(['student_id', 'class_id', 'score', 'type', 'semester', 'academic_year', 'created_at']) &&
+             isValidId(data.student_id) &&
+             isValidId(data.class_id) &&
+             data.score is number && data.score >= 0 && data.score <= 1000 &&
+             data.type in ['daily', 'midterm', 'final', 'project', 'attendance'] &&
+             (data.get('topic_title', '') == '' || data.topic_title is string) &&
+             data.semester is int &&
+             data.academic_year is string &&
+             data.created_at is timestamp;
+    }
+
+    function isValidSchedule(data) {
+      return data.keys().hasAll(['class_id', 'subject_id', 'day', 'start_time', 'end_time', 'created_at']) &&
+             isValidId(data.class_id) &&
+             isValidId(data.subject_id) &&
+             data.day is int && data.day >= 0 && data.day <= 6 &&
+             data.start_time is string &&
+             data.end_time is string &&
+             data.created_at is timestamp;
+    }
+
+    function isValidTeachingDoc(data) {
+      return data.keys().hasAll(['teacher_id', 'type', 'title', 'created_at']) &&
+             isValidId(data.teacher_id) &&
+             data.type in ['ATP', 'PROTA', 'PROMES', 'MODUL_AJAR', 'SUMATIF', 'KKTP'] &&
+             data.title is string && data.title.size() <= 300 &&
+             (data.get('content', null) == null || data.content is map) &&
+             data.created_at is timestamp;
+    }
+
+    function isValidSettings(data) {
+      return data.keys().hasAll(['academic_year', 'updated_at']) &&
+             data.academic_year is string &&
+             (data.get('semester', '') == '' || data.semester in ['Ganjil', 'Genap']) &&
+             (data.get('school_name', '') == '' || (data.school_name is string && data.school_name.size() <= 200)) &&
+             (data.get('school_level', '') == '' || (data.school_level is string && data.school_level.size() <= 100)) &&
+             (data.get('school_address', '') == '' || (data.school_address is string && data.school_address.size() <= 500)) &&
+             (data.get('principal_name', '') == '' || (data.principal_name is string && data.principal_name.size() <= 200)) &&
+             (data.get('principal_nip', '') == '' || (data.principal_nip is string && data.principal_nip.size() <= 50)) &&
+             (data.get('school_description', '') == '' || (data.school_description is string && data.school_description.size() <= 2000)) &&
+             (data.get('academic_pred_a_desc', '') == '' || (data.academic_pred_a_desc is string && data.academic_pred_a_desc.size() <= 1000)) &&
+             (data.get('academic_pred_b_desc', '') == '' || (data.academic_pred_b_desc is string && data.academic_pred_b_desc.size() <= 1000)) &&
+             (data.get('academic_pred_c_desc', '') == '' || (data.academic_pred_c_desc is string && data.academic_pred_c_desc.size() <= 1000)) &&
+             (data.get('academic_pred_d_desc', '') == '' || (data.academic_pred_d_desc is string && data.academic_pred_d_desc.size() <= 1000)) &&
+             (data.get('ekskul_pred_sb_desc', '') == '' || (data.ekskul_pred_sb_desc is string && data.ekskul_pred_sb_desc.size() <= 1000)) &&
+             (data.get('ekskul_pred_b_desc', '') == '' || (data.ekskul_pred_b_desc is string && data.ekskul_pred_b_desc.size() <= 1000)) &&
+             (data.get('ekskul_pred_c_desc', '') == '' || (data.ekskul_pred_c_desc is string && data.ekskul_pred_c_desc.size() <= 1000)) &&
+             (data.get('ekskul_pred_k_desc', '') == '' || (data.ekskul_pred_k_desc is string && data.ekskul_pred_k_desc.size() <= 1000)) &&
+             (data.get('cocurricular_pred_sb_desc', '') == '' || (data.cocurricular_pred_sb_desc is string && data.cocurricular_pred_sb_desc.size() <= 1000)) &&
+             (data.get('cocurricular_pred_bsh_desc', '') == '' || (data.cocurricular_pred_bsh_desc is string && data.cocurricular_pred_bsh_desc.size() <= 1000)) &&
+             (data.get('cocurricular_pred_mb_desc', '') == '' || (data.cocurricular_pred_mb_desc is string && data.cocurricular_pred_mb_desc.size() <= 1000)) &&
+             (data.get('cocurricular_pred_bb_desc', '') == '' || (data.cocurricular_pred_bb_desc is string && data.cocurricular_pred_bb_desc.size() <= 1000)) &&
+             data.updated_at is timestamp;
+    }
+
+    function isValidExtracurricular(data) {
+      return data.keys().hasAll(['name', 'created_at']) &&
+             data.name is string && data.name.size() <= 200 &&
+             (data.get('coach_name', '') == '' || (data.coach_name is string && data.coach_name.size() <= 200)) &&
+             (data.get('schedule', '') == '' || (data.schedule is string && data.schedule.size() <= 200)) &&
+             (data.get('description', '') == '' || (data.description is string && data.description.size() <= 2000)) &&
+             (data.created_at is timestamp || data.created_at is string);
+    }
+
+    function isValidCocurricular(data) {
+      return data.keys().hasAll(['title', 'semester', 'created_at']) &&
+             data.title is string && data.title.size() <= 300 &&
+             data.semester in ['1', '2'] &&
+             (data.get('class_level', '') == '' || (data.class_level is string && data.class_level.size() <= 100)) &&
+             (data.get('description', '') == '' || (data.description is string && data.description.size() <= 2000)) &&
+             (data.created_at is timestamp || data.created_at is string);
+    }
+
+    // --- Match Blocks ---
+
+    match /extracurriculars/{extracurricularId} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin() && isValidExtracurricular(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /cocurriculars/{cocurricularId} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin() && isValidCocurricular(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if (isOwner(userId) || isAdmin()) && isValidUser(incoming()) && (incoming().role != 'admin' || isAdmin()) && (incoming().get('is_approved', false) == false || isAdmin()) && (incoming().get('created_at', null) == request.time || incoming().get('created_at', null) is string || incoming().get('created_at', null) == null);
+      allow update: if (isAdmin() || isOwner(userId)) && isValidUser(incoming()) && (
+        isAdmin() ||
+        (isOwner(userId) && incoming().get('created_at', null) == existing().get('created_at', null) && incoming().diff(existing()).affectedKeys().hasOnly(['full_name', 'class_id', 'email', 'teacher_type', 'gender', 'nickname', 'nis', 'nisn', 'birth_place', 'birth_date', 'father_name', 'mother_name', 'password', 'last_education', 'golongan', 'pangkat', 'api_key']) && incoming().get('is_approved', false) == existing().get('is_approved', false))
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /students/{studentId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin() || isTeacher();
+      allow create: if (isAdmin() || isTeacher()) && isValidStudent(incoming());
+      allow update: if (isAdmin() || isTeacher()) && isValidStudent(incoming());
+      allow delete: if isAdmin() || isTeacher();
+    }
+
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow create: if (isTeacher() || isAdmin()) && isValidClass(incoming()) && incoming().created_at == request.time;
+      allow update: if (isAdmin() || existing().teacher_id == request.auth.uid) && isValidClass(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'teacher_id', 'code', 'subject', 'semester', 'academic_year'])
+      ) && incoming().created_at == existing().created_at;
+      allow delete: if isAdmin() || existing().teacher_id == request.auth.uid;
+
+      match /materials/{materialId} {
+        allow read: if isSignedIn();
+        allow create: if (isAdmin() || (isTeacher() && isApproved() && get(/databases/$(database)/documents/classes/$(classId)).data.teacher_id == request.auth.uid)) && isValidMaterial(incoming()) && incoming().created_at == request.time;
+        allow update: if (isAdmin() || (isTeacher() && isApproved() && get(/databases/$(database)/documents/classes/$(classId)).data.teacher_id == request.auth.uid)) && isValidMaterial(incoming()) && incoming().created_at == existing().created_at;
+        allow delete: if isAdmin() || (isTeacher() && get(/databases/$(database)/documents/classes/$(classId)).data.teacher_id == request.auth.uid);
+      }
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if isSignedIn();
+      allow create, update: if (isTeacher() || isAdmin()) && isValidSubject(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn(); // In proper app, limit students to their own
+      allow create, update: if (isTeacher() || isAdmin()) && isValidAttendance(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /grades/{gradeId} {
+      allow read: if isSignedIn(); // Limit to student or their teacher
+      allow create, update: if (isTeacher() || isAdmin()) && isValidGrade(incoming());
+      allow delete: if isTeacher() || isAdmin();
+    }
+
+    match /schedules/{scheduleId} {
+      allow read: if isSignedIn();
+      allow create, update: if (isTeacher() || isAdmin()) && isValidSchedule(incoming());
+    }
+
+    match /teaching_documents/{docId} {
+      allow read: if isSignedIn();
+      allow create: if (isTeacher() || isAdmin()) && isValidTeachingDoc(incoming()) && incoming().teacher_id == request.auth.uid;
+      allow update: if (isAdmin() || existing().teacher_id == request.auth.uid) && isValidTeachingDoc(incoming());
+      allow delete: if isAdmin() || existing().teacher_id == request.auth.uid;
+    }
+
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false; // Managed via console or special tool
+    }
+
+    match /settings/general {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() && isValidSettings(incoming());
+    }
+  }
+}

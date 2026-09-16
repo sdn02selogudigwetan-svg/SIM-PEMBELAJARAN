@@ -1,0 +1,271 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with role and class association",
+      "type": "object",
+      "properties": {
+        "full_name": { "type": "string" },
+        "nickname": { "type": "string" },
+        "gender": { "type": "string", "enum": ["L", "P"] },
+        "is_approved": { "type": "boolean" },
+        "nis": { "type": "string" },
+        "nisn": { "type": "string" },
+        "birth_place": { "type": "string" },
+        "birth_date": { "type": "string" },
+        "father_name": { "type": "string" },
+        "mother_name": { "type": "string" },
+        "role": { "type": "string", "enum": ["teacher", "student", "admin"] },
+        "teacher_type": { 
+          "type": "string", 
+          "enum": [
+            "Guru Kelas 1", 
+            "Guru Kelas 2", 
+            "Guru Kelas 3", 
+            "Guru Kelas 4", 
+            "Guru Kelas 5", 
+            "Guru Kelas 6", 
+            "Guru PAI", 
+            "Guru PJOK"
+          ] 
+        },
+        "email": { "type": "string" },
+        "class_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["full_name", "role", "created_at"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "School class information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "subject": { "type": "string" },
+        "semester": { "type": "string", "enum": ["1", "2"] },
+        "academic_year": { "type": "string" },
+        "teacher_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "teacher_id", "created_at"]
+    },
+    "LessonMaterial": {
+      "title": "Lesson Material",
+      "description": "Educational materials for a class and semester",
+      "type": "object",
+      "properties": {
+        "class_id": { "type": "string" },
+        "semester": { "type": "string", "enum": ["1", "2"] },
+        "subject": { "type": "string" },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "sub_topics": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["title", "sub_topics"]
+          }
+        },
+        "description": { "type": "string" },
+        "file_url": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["class_id", "semester", "topics", "created_at"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Subject taught in a class",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "class_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "class_id", "created_at"]
+    },
+    "Attendance": {
+      "title": "Attendance record",
+      "description": "Class daily attendance records mapping student IDs to status",
+      "type": "object",
+      "properties": {
+        "class_id": { "type": "string" },
+        "date": { "type": "string" },
+        "teacher_id": { "type": "string" },
+        "records": { "type": "object" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["class_id", "date", "teacher_id", "records", "updated_at"]
+    },
+    "Grade": {
+      "title": "Grade",
+      "description": "Student grade for a subject or school term attendance",
+      "type": "object",
+      "properties": {
+        "student_id": { "type": "string" },
+        "class_id": { "type": "string" },
+        "score": { "type": "number" },
+        "type": { "type": "string", "enum": ["daily", "midterm", "final", "project", "attendance"] },
+        "topic_title": { "type": "string" },
+        "semester": { "type": "integer" },
+        "academic_year": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["student_id", "class_id", "score", "type", "semester", "academic_year", "created_at"]
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "description": "Class schedule for a subject",
+      "type": "object",
+      "properties": {
+        "class_id": { "type": "string" },
+        "subject_id": { "type": "string" },
+        "day": { "type": "integer" },
+        "start_time": { "type": "string" },
+        "end_time": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["class_id", "subject_id", "day", "start_time", "end_time", "created_at"]
+    },
+    "TeachingDocument": {
+      "title": "Teaching Document",
+      "description": "Documents created by teachers (ATP, Modul Ajar, etc.)",
+      "type": "object",
+      "properties": {
+        "teacher_id": { "type": "string" },
+        "type": { "type": "string", "enum": ["ATP", "PROTA", "PROMES", "MODUL_AJAR", "SUMATIF"] },
+        "title": { "type": "string" },
+        "content": { "type": "object" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["teacher_id", "type", "title", "created_at"]
+    },
+    "SystemSettings": {
+      "title": "System Settings",
+      "description": "Global school settings",
+      "type": "object",
+      "properties": {
+        "academic_year": { "type": "string" },
+        "semester": { "type": "string" },
+        "school_name": { "type": "string" },
+        "school_level": { "type": "string" },
+        "principal_name": { "type": "string" },
+        "principal_nip": { "type": "string" },
+        "school_description": { "type": "string" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["academic_year", "updated_at"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "System administrators",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" }
+      },
+      "required": ["email"]
+    },
+    "Student": {
+      "title": "Student Master Data",
+      "description": "Master student records managed by admin/teachers",
+      "type": "object",
+      "properties": {
+        "full_name": { "type": "string" },
+        "nickname": { "type": "string" },
+        "gender": { "type": "string", "enum": ["L", "P"] },
+        "class_id": { "type": "string" },
+        "nis": { "type": "string" },
+        "nisn": { "type": "string" },
+        "birth_place": { "type": "string" },
+        "birth_date": { "type": "string" },
+        "father_name": { "type": "string" },
+        "mother_name": { "type": "string" },
+        "role": { "type": "string", "enum": ["student"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["full_name", "class_id", "created_at"]
+    },
+    "Extracurricular": {
+      "title": "Extracurricular",
+      "description": "School extracurricular activities",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "coach_name": { "type": "string" },
+        "schedule": { "type": "string" },
+        "description": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "created_at"]
+    },
+    "Cocurricular": {
+      "title": "Cocurricular topic",
+      "description": "School co-curricular activities and topics",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "class_level": { "type": "string" },
+        "semester": { "type": "string", "enum": ["1", "2"] },
+        "description": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "semester", "created_at"]
+    }
+  },
+  "firestore": {
+    "/extracurriculars/{id}": {
+      "schema": "Extracurricular",
+      "description": "Extracurricular activities"
+    },
+    "/cocurriculars/{id}": {
+      "schema": "Cocurricular",
+      "description": "Cocurricular activities or topics"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles (authenticated accounts)"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Master list of students (not accounts)"
+    },
+    "/classes/{classId}": {
+      "schema": "Class",
+      "description": "Classes"
+    },
+    "/classes/{classId}/materials/{materialId}": {
+      "schema": "LessonMaterial",
+      "description": "Lesson materials for a class"
+    },
+    "/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Subjects"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Attendance records"
+    },
+    "/grades/{gradeId}": {
+      "schema": "Grade",
+      "description": "Grades"
+    },
+    "/schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "Schedules"
+    },
+    "/teaching_documents/{docId}": {
+      "schema": "TeachingDocument",
+      "description": "Teaching documents"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "System administrators"
+    },
+    "/settings/general": {
+      "schema": "SystemSettings",
+      "description": "Global school configurations"
+    }
+  }
+}
