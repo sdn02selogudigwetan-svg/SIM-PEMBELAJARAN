@@ -21,7 +21,7 @@
 /* Custom elegant scrollbar for menus and list containers */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #e2e8f0 transparent;
+  scrollbar-color: #33cfad transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -130,7 +130,7 @@
   }
 
   th, td {
-    border: 1.5px solid #cbd5e1 !important;
+    border: 1.5px solid #83d8e7 !important;
     padding: 10px 8px !important;
     font-size: 11px !important;
     color: #000000 !important;
