@@ -25,16 +25,23 @@ async function startServer() {
 
       if (!apiKey) {
         return res.status(400).json({ 
-          error: "API Key Gemini tidak ditemukan. Harap isi API Key di Identitas Guru atau hubungi admin." 
+          error: "API Key Gemini tidak ditemukan. Harap isi API Key di Identitas Guru atau tambahkan GEMINI_API_KEY di pengaturan server / Vercel." 
         });
       }
 
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
       
-      // Determine model: fallback to gemini-3.6-flash if invalid model passed
-      let targetModel = model || "gemini-3.6-flash";
-      if (targetModel === "gemini-3.5-flash" || targetModel === "gemini-2.5-flash") {
-        targetModel = "gemini-3.6-flash";
+      // Determine model: fallback to gemini-3.8-flash if invalid model passed
+      let targetModel = model || "gemini-3.8-flash";
+      if (targetModel === "gemini-3.5-flash" || targetModel === "gemini-2.5-flash" || targetModel === "gemini-3.6-flash") {
+        targetModel = "gemini-3.8-flash";
       }
 
       const response = await ai.models.generateContent({
@@ -46,9 +53,30 @@ async function startServer() {
       res.json({ text: response.text || "" });
     } catch (error: any) {
       console.error("Gemini API Error in server:", error);
-      res.status(500).json({ 
-        error: error.message || "Gagal merumuskan dokumen dengan Gemini AI" 
-      });
+      let status = 500;
+      let message = error.message || "Gagal merumuskan dokumen dengan Gemini AI";
+
+      try {
+        if (typeof message === "string" && message.includes("{")) {
+          const match = message.match(/"message"\s*:\s*"([^"]+)"/);
+          if (match && match[1]) {
+            message = match[1];
+          }
+        }
+      } catch {}
+
+      if (message.includes("API_KEY_INVALID") || message.includes("API key not valid")) {
+        status = 401;
+        message = "API Key Gemini tidak valid. Silakan periksa kembali API Key Anda di Identitas Guru.";
+      } else if (message.includes("RESOURCE_EXHAUSTED") || message.includes("quota") || message.includes("429")) {
+        status = 429;
+        message = "Kuota Gemini API telah tercapai (Rate Limit / Quota Exceeded). Silakan coba lagi nanti atau gunakan API Key lain.";
+      } else if (message.includes("high demand") || message.includes("UNAVAILABLE") || message.includes("503")) {
+        status = 503;
+        message = "Server Gemini saat ini sedang sibuk (high demand). Silakan klik 'Rumuskan' kembali beberapa saat lagi.";
+      }
+
+      res.status(status).json({ error: message });
     }
   });
 
