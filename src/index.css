@@ -55,7 +55,7 @@
 /* Print optimizations for official reports */
 @media print {
   html, body {
-    background: #ffffff !important;
+    background: #64dcec !important;
     color: #000000 !important;
     width: 100% !important;
     height: auto !important;
@@ -87,7 +87,7 @@
     overflow: visible !important;
     box-shadow: none !important;
     border: none !important;
-    background: #ffffff !important;
+    background: #68a8b8 !important;
     border-radius: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
